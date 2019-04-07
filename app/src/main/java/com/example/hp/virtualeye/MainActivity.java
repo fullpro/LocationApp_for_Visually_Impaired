@@ -9,6 +9,7 @@ import android.bluetooth.BluetoothManager;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.os.Build;
+import android.os.Handler;
 import android.provider.Settings;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.widget.SwipeRefreshLayout;
@@ -30,33 +31,33 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Objects;
 import java.util.Scanner;
+import java.util.SortedMap;
 import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
 import static android.Manifest.permission.ACCESS_COARSE_LOCATION;
 import static android.provider.Settings.Secure.LOCATION_MODE;
+import static android.support.v7.widget.AppCompatDrawableManager.get;
 
 public class MainActivity extends AppCompatActivity {
 
 
+    public static final int REQUEST_ENABLE_LOCATION = 1;
     private static final int PERMISSION_REQUEST_ID = 1;
-    private static final String LOG_TAG = "hi";
-    RecyclerView list;
-    private Context context;
 
-    private TreeMap<String, BTLE_Device> mBTDeviceHashMap = null;
-     SortedSet<BTLE_Device> sortedSet;
 
-    private RecyclerView mrecycler_view;
+    RecyclerView mrecycler_view;
     private ExampleAdapter mAdapter;
-    private RecyclerView.LayoutManager layoutManager;
+    RecyclerView.LayoutManager layoutManager;
+    private HashMap<String, BTLE_Device> mBTDeviceHashMap;
     private ArrayList<BTLE_Device> mDevice;
     BluetoothAdapter bluetoothAdapter;
     SwipeRefreshLayout mySwipeRefreshLayout;
+    ImageButton EditBtn;
 
 
-    private Scanner_BTLE mBTLEScanner;
+    private static Scanner_BTLE mBTLEScanner;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -69,7 +70,8 @@ public class MainActivity extends AppCompatActivity {
 
 
         mDevice = new ArrayList<>();
-        SortedSet<BTLE_Device> sortedSet = new TreeSet<>();
+        mBTDeviceHashMap = new HashMap<>();
+
 
 
         mrecycler_view = findViewById(R.id.list);
@@ -81,14 +83,11 @@ public class MainActivity extends AppCompatActivity {
         mrecycler_view.setLayoutManager(new GridLayoutManager(this, 2));
         mrecycler_view.setAdapter(mAdapter);
 
-        mBTLEScanner = new Scanner_BTLE(this, 10000);
+        mBTLEScanner = new Scanner_BTLE(this, 15000);
 
-        mAdapter.setOnItemClickListener(new ExampleAdapter.onItemClickListener() {
-            @Override
-            public void onItemClick(int position) {
-                String a = mDevice.get(position).getName();
-                Toast.makeText(MainActivity.this, a + " Clicked", Toast.LENGTH_SHORT).show();
-            }
+        mAdapter.setOnItemClickListener(position -> {
+            String a = mDevice.get(position).getName();
+            Toast.makeText(MainActivity.this, a + " Clicked", Toast.LENGTH_SHORT).show();
         });
 
 
@@ -127,13 +126,35 @@ public class MainActivity extends AppCompatActivity {
         }
 
 
+
+
+        mySwipeRefreshLayout = findViewById(R.id.swiperefresh);
+        /*
+         * Sets up a SwipeRefreshLayout.OnRefreshListener that is invoked when the user
+         * performs a swipe-to-refresh gesture.
+         */
+        mySwipeRefreshLayout.setOnRefreshListener(
+                () -> {
+
+
+                    // This method performs the actual data-refresh operation.
+                    // The method calls setRefreshing(false) when it's finished.
+                    startScan();
+                    new Handler().postDelayed(() -> mySwipeRefreshLayout.setRefreshing(false),4000);
+                }
+        );
+
+        EditBtn = findViewById(R.id.EditBtn);
+
+        
+
     }
 
 
     public void startScan(){
        mDevice.clear();
 
-       //mBTDeviceHashMap.clear();
+       mBTDeviceHashMap.clear();
         mAdapter.notifyDataSetChanged();
 
         mBTLEScanner.start();
@@ -164,25 +185,29 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    public  void addDevice(BluetoothDevice device, int new_rssi) {
+    public  void addDevice(BluetoothDevice device, int rssi) {
+
         String address = device.getAddress();
+        String name = device.getName();
+       // Toast.makeText(this,"NAme: "+ name,Toast.LENGTH_LONG).show();
 
 
-        //if (mBTDeviceHashMap == null) {
-                BTLE_Device btle_device = new BTLE_Device(device);
-                btle_device.setRSSI(new_rssi);
+        if (!mBTDeviceHashMap.containsKey(address) && name.contains("iTAG")   ) {
+            BTLE_Device btle_device = new BTLE_Device(device);
+           // btle_device.setRSSI(new_rssi);
 
-              //  mBTDeviceHashMap.put(address, btle_device);
-                mDevice.add(btle_device);
-            //} else {
-              //  Objects.requireNonNull(mBTDeviceHashMap.get(address)).setRSSI(new_rssi);
 
+           mBTDeviceHashMap.put(address, btle_device);
+            mDevice.add(btle_device);
+        } else {
+
+
+            mBTDeviceHashMap.get(address);
+
+        }
         mAdapter.notifyDataSetChanged();
 
     }
-
-
-
 
 
     @Override

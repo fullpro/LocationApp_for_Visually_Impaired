@@ -19,7 +19,7 @@ public class Scanner_BTLE {
     private Handler mHandler;
 
     private long scanPeriod;
-    ;
+
 
     public Scanner_BTLE(MainActivity mainActivity, long scanPeriod) {
 
@@ -44,7 +44,7 @@ public class Scanner_BTLE {
             ma.stopScan();
             Toast.makeText(this.ma,"Bluetooth is OFF",Toast.LENGTH_LONG).show();
         } else {*/
-            scanLeDevice(true);
+        scanLeDevice(true);
 
     }
 
@@ -61,13 +61,10 @@ public class Scanner_BTLE {
         if (enable) {
             Toast.makeText(this.ma,"Started Scanning",Toast.LENGTH_LONG).show();
             // Stops scanning after a pre-defined scan period.
-            mHandler.postDelayed(new Runnable() {
-                @Override
-                public void run() {
-                    mScanning = false;
-                    bluetoothAdapter.stopLeScan(leScanCallback);
+            mHandler.postDelayed(() -> {
+                mScanning = false;
+                bluetoothAdapter.stopLeScan(leScanCallback);
 
-                }
             }, scanPeriod);
 
             mScanning = true;
@@ -88,21 +85,15 @@ public class Scanner_BTLE {
         }
     };
 
-            private BluetoothAdapter.LeScanCallback leScanCallback =
+    private BluetoothAdapter.LeScanCallback leScanCallback =
             new BluetoothAdapter.LeScanCallback() {
-                    @Override
-                    public void onLeScan(final BluetoothDevice device,int rssi, byte[] scanRecord) {
-                        final int new_rssi = rssi;
+                @Override
+                public void onLeScan(final BluetoothDevice device,int rssi, byte[] scanRecord) {
+                    final int new_rssi = rssi;
 
 
-                            mHandler.post(new Runnable() {
-                                @Override
-                                public void run() {
-                                    ma.addDevice(device, new_rssi);
-
-                                }
-                            });
-                        }
+                    mHandler.post(() -> ma.addDevice(device, new_rssi));
+                }
 
             };
 

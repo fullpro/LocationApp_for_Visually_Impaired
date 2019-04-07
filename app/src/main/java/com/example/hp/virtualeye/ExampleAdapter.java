@@ -27,7 +27,7 @@ public class ExampleAdapter extends RecyclerView.Adapter<ExampleAdapter.ExampleV
     public static class ExampleViewHolder extends RecyclerView.ViewHolder {
         public TextView tv_name;
         public TextView tv_macaddr;
-       // public TextView tv_rssi;
+
 
 
 
@@ -35,18 +35,15 @@ public class ExampleAdapter extends RecyclerView.Adapter<ExampleAdapter.ExampleV
             super(itemView);
             tv_name=itemView.findViewById(R.id.tv_name);
             tv_macaddr=itemView.findViewById(R.id.tv_macaddr);
-         //   tv_rssi=itemView.findViewById(R.id.tv_rssi);
 
-            itemView.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    if (listener!=null)
+
+            itemView.setOnClickListener(v -> {
+                if (listener!=null)
+                {
+                    int position=getAdapterPosition();
+                    if (position!=RecyclerView.NO_POSITION)
                     {
-                        int position=getAdapterPosition();
-                        if (position!=RecyclerView.NO_POSITION)
-                        {
-                            listener.onItemClick(position);
-                        }
+                        listener.onItemClick(position);
                     }
                 }
             });
@@ -74,10 +71,11 @@ public class ExampleAdapter extends RecyclerView.Adapter<ExampleAdapter.ExampleV
 
         exampleViewHolder.tv_name.setText(current_example.getName());
         exampleViewHolder.tv_macaddr.setText(current_example.getAddress());
-        //exampleViewHolder.tv_rssi.setText(current_example.getRSSI());
+
 
 
     }
+
 
 
     @Override
