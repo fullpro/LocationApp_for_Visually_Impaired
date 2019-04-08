@@ -12,14 +12,29 @@ import android.widget.Toast;
 
 public class Scanner_BTLE {
 
-    private MainActivity ma;
+    ScanCallback scanCallback = new ScanCallback() {
+        @Override
+        public void onScanResult(int callbackType, ScanResult result) {
+            super.onScanResult(callbackType, result);
 
+        }
+    };
+    private MainActivity ma;
     private BluetoothAdapter bluetoothAdapter;
     private boolean mScanning;
     private Handler mHandler;
-
     private long scanPeriod;
+    private BluetoothAdapter.LeScanCallback leScanCallback =
+            new BluetoothAdapter.LeScanCallback() {
+                @Override
+                public void onLeScan(final BluetoothDevice device, int rssi, byte[] scanRecord) {
+                    final int new_rssi = rssi;
 
+
+                    mHandler.post(() -> ma.addDevice(device, new_rssi));
+                }
+
+            };
 
     public Scanner_BTLE(MainActivity mainActivity, long scanPeriod) {
 
@@ -53,13 +68,9 @@ public class Scanner_BTLE {
         scanLeDevice(false);
     }
 
-
-
-
-
     private void scanLeDevice(final boolean enable) {
         if (enable) {
-            Toast.makeText(this.ma,"Started Scanning",Toast.LENGTH_LONG).show();
+            Toast.makeText(this.ma, "Started Scanning", Toast.LENGTH_LONG).show();
             // Stops scanning after a pre-defined scan period.
             mHandler.postDelayed(() -> {
                 mScanning = false;
@@ -70,33 +81,12 @@ public class Scanner_BTLE {
             mScanning = true;
             bluetoothAdapter.startLeScan(leScanCallback);
         } else {
-            Toast.makeText(this.ma,"No Device Found",Toast.LENGTH_LONG).show();
+            Toast.makeText(this.ma, "No Device Found", Toast.LENGTH_LONG).show();
             mScanning = false;
             bluetoothAdapter.stopLeScan(leScanCallback);
         }
 
     }
-
-    ScanCallback scanCallback = new ScanCallback() {
-        @Override
-        public void onScanResult(int callbackType, ScanResult result) {
-            super.onScanResult(callbackType, result);
-
-        }
-    };
-
-    private BluetoothAdapter.LeScanCallback leScanCallback =
-            new BluetoothAdapter.LeScanCallback() {
-                @Override
-                public void onLeScan(final BluetoothDevice device,int rssi, byte[] scanRecord) {
-                    final int new_rssi = rssi;
-
-
-                    mHandler.post(() -> ma.addDevice(device, new_rssi));
-                }
-
-            };
-
 
 
 }

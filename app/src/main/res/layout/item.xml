@@ -1,16 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <android.support.v7.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/cardview"
     android:layout_width="match_parent"
     android:layout_height="200dp"
+    android:layout_margin="4dp"
     android:layout_marginBottom="10dp"
-    app:cardBackgroundColor="#ACA9A9"
-    app:cardCornerRadius="4dp"
-    android:id="@+id/cardview"
     android:clickable="true"
-    android:foreground="?android:attr/selectableItemBackground"
     android:focusable="true"
-    android:layout_margin="4dp">
+    android:foreground="?android:attr/selectableItemBackground"
+    app:cardBackgroundColor="#ACA9A9"
+    app:cardCornerRadius="4dp">
 
     <RelativeLayout
         android:layout_width="match_parent"
@@ -22,11 +22,11 @@
             android:id="@+id/EditBtn"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:background="@drawable/ic_edit"
             android:layout_alignParentEnd="true"
+            android:background="@drawable/ic_edit"
             android:clickable="true"
             android:focusable="true"
-            android:foreground="?android:attr/selectableItemBackground"/>
+            android:foreground="?android:attr/selectableItemBackground" />
 
         <TextView
             android:id="@+id/tv_name"
@@ -36,10 +36,10 @@
             android:layout_margin="4dp"
             android:gravity="center"
             android:text="Name"
+            android:textAlignment="center"
             android:textColor="#000000"
-            android:textSize="32sp"
 
-            android:textAlignment="center"/>
+            android:textSize="32sp" />
 
 
         <TextView
@@ -47,9 +47,9 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_below="@+id/tv_name"
+            android:layout_alignParentBottom="true"
             android:layout_margin="4dp"
             android:text="MAC Address"
-            android:layout_alignParentBottom="true"
             android:textColor="#000000"
             android:textSize="14sp" />
 
