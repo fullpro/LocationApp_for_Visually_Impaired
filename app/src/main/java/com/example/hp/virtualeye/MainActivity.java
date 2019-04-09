@@ -151,17 +151,17 @@ public class MainActivity extends AppCompatActivity {
                     new Handler().postDelayed(() -> mySwipeRefreshLayout.setRefreshing(false), 4000);
                 }
         );
-
+        save();
         EditBtn = findViewById(R.id.EditBtn);
     }
-    public void save(BTLE_Device btle_device){
+    public void save(){
 
         Toast.makeText(MainActivity.this,"In show",Toast.LENGTH_SHORT).show();
         SharedPreferences appSharedPrefs = getSharedPreferences("shared prefernces",MODE_PRIVATE);
        SharedPreferences.Editor prefsEditor = appSharedPrefs.edit();
        Gson gson=new Gson();
        String json=gson.toJson(mDevice);
-       prefsEditor.putString("list1",json);
+       prefsEditor.putString("mylist",json);
        prefsEditor.apply();
 
 
@@ -169,19 +169,20 @@ public class MainActivity extends AppCompatActivity {
     public void load(){
         SharedPreferences appSharedPrefs = getSharedPreferences("shared prefernces",MODE_PRIVATE);
         Gson gson = new Gson();
-        String json = appSharedPrefs.getString("list1", null);
+        String json = appSharedPrefs.getString("mylist", null);
             Type type = new TypeToken<ArrayList<BTLE_Device>>(){}.getType();
-            mDevice=gson.fromJson(json,type);
+
+
 
             if (mDevice==null)
             {
                 mDevice=new ArrayList<>();
             }
             else {
-                for (BTLE_Device btle_device: mDevice)
-                {
-                    mBTDeviceHashMap.put(btle_device.getAddress(),btle_device);
+                if (json!=null) {
+                    mDevice.add(gson.fromJson(json, type));
                 }
+
             }
 
 
@@ -198,6 +199,8 @@ public class MainActivity extends AppCompatActivity {
 
     public void stopScan() {
         mBTLEScanner.stop();
+
+
 
     }
 
@@ -232,7 +235,6 @@ public class MainActivity extends AppCompatActivity {
             {
                 mBTDeviceHashMap.put(address, btle_device);
                 mDevice.add(btle_device);
-                save(btle_device);
 
             }
 
