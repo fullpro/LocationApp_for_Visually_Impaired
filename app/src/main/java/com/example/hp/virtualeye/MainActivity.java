@@ -7,9 +7,11 @@ import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothManager;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Handler;
+import android.preference.PreferenceManager;
 import android.provider.Settings;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.widget.SwipeRefreshLayout;
@@ -27,10 +29,22 @@ import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.Toast;
 
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
+
+import java.io.BufferedReader;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Objects;
 import java.util.Scanner;
+import java.util.Set;
 import java.util.SortedMap;
 import java.util.SortedSet;
 import java.util.TreeMap;
@@ -42,7 +56,7 @@ import static android.support.v7.widget.AppCompatDrawableManager.get;
 
 public class MainActivity extends AppCompatActivity {
 
-
+    private static  final String FILE_NAME="example.txt";
     private static final int PERMISSION_REQUEST_ID = 1;
     private static Scanner_BTLE mBTLEScanner;
     RecyclerView mrecycler_view;
@@ -52,7 +66,7 @@ public class MainActivity extends AppCompatActivity {
     ImageButton EditBtn;
     private ExampleAdapter mAdapter;
     private HashMap<String, BTLE_Device> mBTDeviceHashMap;
-    private ArrayList<BTLE_Device> mDevice;
+    private ArrayList<BTLE_Device> mDevice,devices;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -64,8 +78,10 @@ public class MainActivity extends AppCompatActivity {
                 WindowManager.LayoutParams.FLAG_FULLSCREEN);
 
 
-        mDevice = new ArrayList<>();
-        mBTDeviceHashMap = new HashMap<>();
+        mDevice=new ArrayList<>();
+        mBTDeviceHashMap=new HashMap<>();
+
+        load();
 
 
         mrecycler_view = findViewById(R.id.list);
@@ -138,11 +154,41 @@ public class MainActivity extends AppCompatActivity {
 
         EditBtn = findViewById(R.id.EditBtn);
     }
+    public void save(BTLE_Device btle_device){
 
+        Toast.makeText(MainActivity.this,"In show",Toast.LENGTH_SHORT).show();
+        SharedPreferences appSharedPrefs = getSharedPreferences("shared prefernces",MODE_PRIVATE);
+       SharedPreferences.Editor prefsEditor = appSharedPrefs.edit();
+       Gson gson=new Gson();
+       String json=gson.toJson(mDevice);
+       prefsEditor.putString("list1",json);
+       prefsEditor.apply();
+
+
+    }
+    public void load(){
+        SharedPreferences appSharedPrefs = getSharedPreferences("shared prefernces",MODE_PRIVATE);
+        Gson gson = new Gson();
+        String json = appSharedPrefs.getString("list1", null);
+            Type type = new TypeToken<ArrayList<BTLE_Device>>(){}.getType();
+            mDevice=gson.fromJson(json,type);
+
+            if (mDevice==null)
+            {
+                mDevice=new ArrayList<>();
+            }
+            else {
+                for (BTLE_Device btle_device: mDevice)
+                {
+                    mBTDeviceHashMap.put(btle_device.getAddress(),btle_device);
+                }
+            }
+
+
+    }
 
     public void startScan() {
         mDevice.clear();
-
         mBTDeviceHashMap.clear();
         mAdapter.notifyDataSetChanged();
 
@@ -152,6 +198,7 @@ public class MainActivity extends AppCompatActivity {
 
     public void stopScan() {
         mBTLEScanner.stop();
+
     }
 
 
@@ -179,17 +226,24 @@ public class MainActivity extends AppCompatActivity {
         String name = device.getName();
         // Toast.makeText(this,"NAme: "+ name,Toast.LENGTH_LONG).show();
 
-        if (!mBTDeviceHashMap.containsKey(address) && name.contains("iTAG")) {
+        if (!mBTDeviceHashMap.containsKey(address)&& device.getName()!=null) {
             BTLE_Device btle_device = new BTLE_Device(device);
+            //if (btle_device.getName().equals("iTAG"))
+            {
+                mBTDeviceHashMap.put(address, btle_device);
+                mDevice.add(btle_device);
+                save(btle_device);
 
-            mBTDeviceHashMap.put(address, btle_device);
-            mDevice.add(btle_device);
+            }
+
+
         } else {
             mBTDeviceHashMap.get(address);
         }
 
         mAdapter.notifyDataSetChanged();
     }
+
 
 
     @Override
