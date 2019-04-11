@@ -7,12 +7,14 @@ import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothManager;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Handler;
 import android.preference.PreferenceManager;
 import android.provider.Settings;
+import android.speech.RecognizerIntent;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AppCompatActivity;
@@ -25,8 +27,11 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.gson.Gson;
@@ -67,6 +72,10 @@ public class MainActivity extends AppCompatActivity {
     private ExampleAdapter mAdapter;
     private HashMap<String, BTLE_Device> mBTDeviceHashMap;
     private ArrayList<BTLE_Device> mDevice,devices;
+    Button record;
+    public static final int VOICE_RECOGNITION_REQUEST_CODE = 1234;
+    String result;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -77,7 +86,7 @@ public class MainActivity extends AppCompatActivity {
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
                 WindowManager.LayoutParams.FLAG_FULLSCREEN);
 
-
+        record=findViewById(R.id.record);
         mDevice=new ArrayList<>();
         mBTDeviceHashMap=new HashMap<>();
 
@@ -93,11 +102,22 @@ public class MainActivity extends AppCompatActivity {
         mrecycler_view.setLayoutManager(new GridLayoutManager(this, 2));
         mrecycler_view.setAdapter(mAdapter);
 
+        record.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                startVoiceRecognitionActivity();
+
+
+            }
+        });
+
         mBTLEScanner = new Scanner_BTLE(this, 15000);
 
         mAdapter.setOnItemClickListener(position -> {
             String a = mDevice.get(position).getName();
-            Toast.makeText(MainActivity.this, a + " Clicked", Toast.LENGTH_SHORT).show();
+            startVoiceRecognitionActivity();
+
+
         });
 
 
@@ -151,9 +171,37 @@ public class MainActivity extends AppCompatActivity {
                     new Handler().postDelayed(() -> mySwipeRefreshLayout.setRefreshing(false), 4000);
                 }
         );
-        save();
+        ;
         EditBtn = findViewById(R.id.EditBtn);
     }
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (requestCode == VOICE_RECOGNITION_REQUEST_CODE && resultCode == RESULT_OK)
+        {
+            ArrayList<String> matches = data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
+            result=matches.get(0);
+
+            for(BTLE_Device btle_device:mDevice)
+            {
+                if (matches.get(0).equalsIgnoreCase(btle_device.getName()))
+                {
+                    Toast.makeText(MainActivity.this,btle_device.getName()+" slected",Toast.LENGTH_SHORT).show();
+                }
+            }
+
+
+        }
+    }
+
+    public void startVoiceRecognitionActivity() {
+        Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL,
+                RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
+        intent.putExtra(RecognizerIntent.EXTRA_PROMPT,
+                "Speech recognition demo");
+        startActivityForResult(intent, VOICE_RECOGNITION_REQUEST_CODE);
+    }
+
     public void save(){
 
         Toast.makeText(MainActivity.this,"In show",Toast.LENGTH_SHORT).show();
