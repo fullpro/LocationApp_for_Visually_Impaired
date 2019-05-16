@@ -1,19 +1,20 @@
 package com.example.hp.virtualeye;
 
 import android.Manifest;
-import android.app.Activity;
 import android.app.AlertDialog;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
+import android.bluetooth.BluetoothGatt;
+import android.bluetooth.BluetoothGattCallback;
+import android.bluetooth.BluetoothGattCharacteristic;
+import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothManager;
+import android.bluetooth.BluetoothProfile;
 import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Handler;
-import android.preference.PreferenceManager;
-import android.provider.Settings;
 import android.speech.RecognizerIntent;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.widget.SwipeRefreshLayout;
@@ -23,58 +24,41 @@ import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
-import android.view.MenuItem;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
 import android.widget.Button;
-import android.widget.EditText;
 import android.widget.ImageButton;
-import android.widget.TextView;
 import android.widget.Toast;
 
-import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
-
-import java.io.BufferedReader;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Objects;
-import java.util.Scanner;
-import java.util.Set;
-import java.util.SortedMap;
-import java.util.SortedSet;
-import java.util.TreeMap;
-import java.util.TreeSet;
+import java.util.List;
+
 
 import static android.Manifest.permission.ACCESS_COARSE_LOCATION;
-import static android.provider.Settings.Secure.LOCATION_MODE;
-import static android.support.v7.widget.AppCompatDrawableManager.get;
 
 public class MainActivity extends AppCompatActivity {
 
     private static  final String FILE_NAME="example.txt";
     private static final int PERMISSION_REQUEST_ID = 1;
     private static Scanner_BTLE mBTLEScanner;
-    RecyclerView mrecycler_view;
+    RecyclerView mRecyclerView;
     RecyclerView.LayoutManager layoutManager;
     BluetoothAdapter bluetoothAdapter;
-    SwipeRefreshLayout mySwipeRefreshLayout;
+    private SwipeRefreshLayout mySwipeRefreshLayout;
     ImageButton EditBtn;
+    private BluetoothGatt mGatt;
+    private BluetoothDevice bluetoothDevice;
+    BTLE_Device btle_device;
+
     private ExampleAdapter mAdapter;
     private HashMap<String, BTLE_Device> mBTDeviceHashMap;
-    private ArrayList<BTLE_Device> mDevice,devices;
+    private ArrayList<BTLE_Device> mDevice;
     Button record;
     public static final int VOICE_RECOGNITION_REQUEST_CODE = 1234;
     String result;
+
 
 
     @Override
@@ -93,29 +77,24 @@ public class MainActivity extends AppCompatActivity {
         load();
 
 
-        mrecycler_view = findViewById(R.id.list);
-        mrecycler_view.setHasFixedSize(true);
+        mRecyclerView = findViewById(R.id.list);
+        mRecyclerView.setHasFixedSize(true);
         layoutManager = new LinearLayoutManager(this);
         mAdapter = new ExampleAdapter(mDevice);
 
-        mrecycler_view.setLayoutManager(layoutManager);
-        mrecycler_view.setLayoutManager(new GridLayoutManager(this, 2));
-        mrecycler_view.setAdapter(mAdapter);
+        mRecyclerView.setLayoutManager(layoutManager);
+        mRecyclerView.setLayoutManager(new GridLayoutManager(this, 2));
+        mRecyclerView.setAdapter(mAdapter);
 
-        record.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                startVoiceRecognitionActivity();
-
-
-            }
-        });
+        record.setOnClickListener(v -> startVoiceRecognitionActivity());
 
         mBTLEScanner = new Scanner_BTLE(this, 15000);
 
         mAdapter.setOnItemClickListener(position -> {
             String a = mDevice.get(position).getName();
-            startVoiceRecognitionActivity();
+            bluetoothDevice = mDevice.get(position).getDevice();
+           // startVoiceRecognitionActivity();
+            connectToDevice(bluetoothDevice);
 
 
         });
@@ -171,9 +150,11 @@ public class MainActivity extends AppCompatActivity {
                     new Handler().postDelayed(() -> mySwipeRefreshLayout.setRefreshing(false), 4000);
                 }
         );
-        ;
+
         EditBtn = findViewById(R.id.EditBtn);
     }
+
+
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (requestCode == VOICE_RECOGNITION_REQUEST_CODE && resultCode == RESULT_OK)
@@ -185,11 +166,9 @@ public class MainActivity extends AppCompatActivity {
             {
                 if (matches.get(0).equalsIgnoreCase(btle_device.getName()))
                 {
-                    Toast.makeText(MainActivity.this,btle_device.getName()+" slected",Toast.LENGTH_SHORT).show();
+                    Toast.makeText(MainActivity.this,btle_device.getName()+" selected",Toast.LENGTH_SHORT).show();
                 }
             }
-
-
         }
     }
 
@@ -202,24 +181,38 @@ public class MainActivity extends AppCompatActivity {
         startActivityForResult(intent, VOICE_RECOGNITION_REQUEST_CODE);
     }
 
+
+
     public void save(){
 
-        Toast.makeText(MainActivity.this,"In show",Toast.LENGTH_SHORT).show();
-        SharedPreferences appSharedPrefs = getSharedPreferences("shared prefernces",MODE_PRIVATE);
+        /*Toast.makeText(MainActivity.this,"In show",Toast.LENGTH_SHORT).show();
+        SharedPreferences appSharedPrefs = getSharedPreferences("shared preferences",MODE_PRIVATE);
        SharedPreferences.Editor prefsEditor = appSharedPrefs.edit();
        Gson gson=new Gson();
        String json=gson.toJson(mDevice);
-       prefsEditor.putString("mylist",json);
-       prefsEditor.apply();
+       prefsEditor.putString("my list",json);
+       prefsEditor.apply();*/
+
+       /* try
+        {
+            FileOutputStream fos = context.openFileOutput("YourInfomration.ser", Context.MODE_PRIVATE);
+            ObjectOutputStream oos = new ObjectOutputStream(fos);
+            oos.writeObject(mBTDeviceHashMap);
+            oos.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } */
 
 
     }
-    public void load(){
-        SharedPreferences appSharedPrefs = getSharedPreferences("shared prefernces",MODE_PRIVATE);
-        Gson gson = new Gson();
-        String json = appSharedPrefs.getString("mylist", null);
-            Type type = new TypeToken<ArrayList<BTLE_Device>>(){}.getType();
 
+
+
+    public void load(){
+        /*SharedPreferences appSharedPrefs = getSharedPreferences("shared preferences",MODE_PRIVATE);
+        Gson gson = new Gson();
+        String json = appSharedPrefs.getString("my list", null);
+            Type type = new TypeToken<ArrayList<BTLE_Device>>(){}.getType();
 
 
             if (mDevice==null)
@@ -229,12 +222,27 @@ public class MainActivity extends AppCompatActivity {
             else {
                 if (json!=null) {
                     mDevice.add(gson.fromJson(json, type));
+
                 }
 
-            }
+            }*/
 
+
+
+       /* try
+        {
+            FileInputStream fileInputStream = new FileInputStream(context.getFilesDir()+"/FenceInformation.ser");
+            ObjectInputStream objectInputStream = new ObjectInputStream(fileInputStream);
+            Map myHashMap = (Map)objectInputStream.readObject();
+
+        }
+        catch(ClassNotFoundException | IOException | ClassCastException e) {
+            e.printStackTrace();
+        }*/
 
     }
+
+
 
     public void startScan() {
         mDevice.clear();
@@ -256,7 +264,8 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        startScan();
+        load();
+
     }
 
     @Override
@@ -271,15 +280,15 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    public void addDevice(BluetoothDevice device, int rssi) {
+    public void addDevice(BluetoothDevice device) {
 
         String address = device.getAddress();
         String name = device.getName();
         // Toast.makeText(this,"NAme: "+ name,Toast.LENGTH_LONG).show();
 
-        if (!mBTDeviceHashMap.containsKey(address)&& device.getName()!=null) {
+        if (!mBTDeviceHashMap.containsKey(address) ) {
             BTLE_Device btle_device = new BTLE_Device(device);
-            //if (btle_device.getName().equals("iTAG"))
+
             {
                 mBTDeviceHashMap.put(address, btle_device);
                 mDevice.add(btle_device);
@@ -296,8 +305,56 @@ public class MainActivity extends AppCompatActivity {
 
 
 
+    public void connectToDevice(BluetoothDevice device) {
+        if(mGatt == null) {
+            mGatt = device.connectGatt(this, false, gattCallback);
+            //mBTLEScanner.stop();// will stop after first device detection
+        }
+    }
+
+    private final BluetoothGattCallback gattCallback = new BluetoothGattCallback() {
+        @Override
+        public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
+            Log.i("onConnectionStateChange", "Status: " + status);
+            switch (newState) {
+                case BluetoothProfile.STATE_CONNECTED:
+                    Log.i("gattCallback", "STATE_CONNECTED");
+                    Toast.makeText(MainActivity.this,"connected to " + btle_device.getName(),Toast.LENGTH_LONG ).show();
+                    gatt.discoverServices();
+                    break;
+                case BluetoothProfile.STATE_DISCONNECTED:
+                    Log.e("gattCallback", "STATE_DISCONNECTED");
+                    break;
+                default:
+                    Log.e("gattCallback", "STATE_OTHER");
+            }
+
+        }
+
+        @Override
+        public void onServicesDiscovered(BluetoothGatt gatt, int status) {
+            List<BluetoothGattService> services = gatt.getServices();
+            Log.i("onServicesDiscovered", services.toString());
+            gatt.readCharacteristic(services.get(1).getCharacteristics().get
+                    (0));
+        }
+
+        @Override
+        public void onCharacteristicRead(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
+            Log.i("onCharacteristicRead", characteristic.toString());
+            gatt.disconnect();
+        }
+    };
+
+
+
     @Override
     protected void onDestroy() {
+        if (mGatt == null) {
+            return;
+        }
+        mGatt.close();
+        mGatt = null;
         super.onDestroy();
 
     }
