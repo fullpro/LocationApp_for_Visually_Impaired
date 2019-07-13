@@ -1,5 +1,4 @@
 package com.example.hp.virtualeye;
-
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothManager;
@@ -8,15 +7,12 @@ import android.bluetooth.le.ScanResult;
 import android.content.Context;
 import android.os.Handler;
 import android.widget.Toast;
-
-
 public class Scanner_BTLE {
 
     ScanCallback scanCallback = new ScanCallback() {
         @Override
         public void onScanResult(int callbackType, ScanResult result) {
             super.onScanResult(callbackType, result);
-
         }
     };
     private MainActivity ma;
@@ -24,29 +20,23 @@ public class Scanner_BTLE {
     private boolean mScanning;
     private Handler mHandler;
     private long scanPeriod;
-    private BluetoothAdapter.LeScanCallback leScanCallback =
-            new BluetoothAdapter.LeScanCallback() {
-                @Override
-                public void onLeScan(final BluetoothDevice device, int rssi, byte[] scanRecord) {
-                    final int new_rssi = rssi;
+    private BluetoothAdapter.LeScanCallback leScanCallback = new BluetoothAdapter.LeScanCallback() {
+        @Override
+        public void onLeScan(final BluetoothDevice device, int rssi, byte[] scanRecord) {
+            MyBluetoothDevice myBluetoothDevice=new MyBluetoothDevice();
+            myBluetoothDevice.setBluetoothDevice(device);
+            myBluetoothDevice.setAddress(device.getAddress());
+            myBluetoothDevice.setName(device.getName());
+            mHandler.post(() -> ma.addDevice(myBluetoothDevice));
+        }
 
-
-                    mHandler.post(() -> ma.addDevice(device, new_rssi));
-                }
-
-            };
+    };
 
     public Scanner_BTLE(MainActivity mainActivity, long scanPeriod) {
-
         ma = mainActivity;
-
         mHandler = new Handler();
-
         this.scanPeriod = scanPeriod;
-
-
         final BluetoothManager bluetoothManager = (BluetoothManager) ma.getSystemService(Context.BLUETOOTH_SERVICE);
-
         bluetoothAdapter = bluetoothManager.getAdapter();
     }
 
@@ -64,7 +54,6 @@ public class Scanner_BTLE {
     }
 
     public void stop() {
-
         scanLeDevice(false);
     }
 
@@ -75,9 +64,7 @@ public class Scanner_BTLE {
             mHandler.postDelayed(() -> {
                 mScanning = false;
                 bluetoothAdapter.stopLeScan(leScanCallback);
-
             }, scanPeriod);
-
             mScanning = true;
             bluetoothAdapter.startLeScan(leScanCallback);
         } else {
