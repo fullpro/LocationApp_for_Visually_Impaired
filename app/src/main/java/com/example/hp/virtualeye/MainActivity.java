@@ -5,13 +5,19 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
+import android.bluetooth.BluetoothGatt;
+import android.bluetooth.BluetoothGattCallback;
+import android.bluetooth.BluetoothGattCharacteristic;
+import android.bluetooth.BluetoothGattDescriptor;
 import android.bluetooth.BluetoothManager;
+import android.bluetooth.BluetoothProfile;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Handler;
+import android.os.Message;
 import android.preference.PreferenceManager;
 import android.provider.Settings;
 import android.speech.RecognizerIntent;
@@ -33,7 +39,7 @@ import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
-
+import java.util.UUID;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 
@@ -56,7 +62,7 @@ import java.util.SortedMap;
 import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
-
+import static android.content.ContentValues.TAG;
 import static android.Manifest.permission.ACCESS_COARSE_LOCATION;
 import static android.provider.Settings.Secure.LOCATION_MODE;
 import static android.support.v7.widget.AppCompatDrawableManager.get;
@@ -66,6 +72,7 @@ public class MainActivity extends AppCompatActivity {
     public static final String SHARED = "shared_values";
     public static final String DEVICES_LIST = "devices_list";
     public static final String MAP_LIST = "hashmap";
+    private  static  final String TAG = "BlutoothGattAtivity";
     private static final int PERMISSION_REQUEST_ID = 1;
     private static Scanner_BTLE mBTLEScanner;
     RecyclerView mrecycler_view;
@@ -80,6 +87,26 @@ public class MainActivity extends AppCompatActivity {
     public static final int VOICE_RECOGNITION_REQUEST_CODE = 1234;
     String result;
     public int finalPosition=99999;
+    private BluetoothGatt mGatt;
+    private static final int NO_ALERT = 0x00;
+    //public static final int MEDIUM_ALERT = 0x01;
+    private static final int HIGH_ALERT = 0x02;
+
+    private static final UUID IMMEDIATE_ALERT_SERVICE =
+            UUID.fromString("00001802-0000-1000-8000-00805f9b34fb");
+    private static final UUID FIND_ME_SERVICE =
+            UUID.fromString("0000ffe0-0000-1000-8000-00805f9b34fb");
+    private static final UUID LINK_LOSS_SERVICE =
+            UUID.fromString("00001803-0000-1000-8000-00805f9b34fb");
+    private static final UUID BATTERY_SERVICE =
+            UUID.fromString("0000180f-0000-1000-8000-00805f9b34fb");
+    private static final UUID GENERIC_SERVICE =
+            UUID.fromString("00001800-0000-1000-8000-00805f9b34fb");
+    private static final UUID CLIENT_CHARACTERISTIC_CONFIG =
+            UUID.fromString("00002902-0000-1000-8000-00805f9b34fb");
+    private static final UUID ALERT_LEVEL_CHARACTERISTIC =
+            UUID.fromString("00002a06-0000-1000-8000-00805f9b34fb");
+
 
 
     @Override
@@ -236,6 +263,217 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
+
+    }
+
+    public void connectToDevice(BluetoothDevice device ) {
+        if(mGatt == null) {
+            mGatt = device.connectGatt(this, false, gattCallback);
+            //mBTLEScanner.stop();// will stop after first device detection
+        }
+    }
+
+
+
+
+    private final BluetoothGattCallback gattCallback = new BluetoothGattCallback() {
+
+        private int mState = 0;
+
+        private void reset() {mState = 0;}
+
+        private void advance() {mState++;}
+
+        private void enableNextSensor(BluetoothGatt gatt){
+            BluetoothGattCharacteristic characteristic;
+            switch (mState){
+                case  0:
+                    Log.d(TAG, "Enabling find me service ");
+                    characteristic = gatt.getService(FIND_ME_SERVICE).getCharacteristic(ALERT_LEVEL_CHARACTERISTIC);
+                    characteristic.setValue(new byte[] {0x02});
+                    break;
+                case 1:
+                    Log.d(TAG, "Enabling find me service2 ");
+                    characteristic = gatt.getService(FIND_ME_SERVICE).getCharacteristic(ALERT_LEVEL_CHARACTERISTIC);
+                    characteristic.setValue(new byte[] {0x01});
+                    break;
+                default:
+                    mHandler.sendEmptyMessage(MSG_DISMISS);
+                    return;
+            }
+            gatt.writeCharacteristic(characteristic);
+        }
+
+
+        private void readNextSensor(BluetoothGatt gatt){
+            BluetoothGattCharacteristic characteristic;
+            switch (mState){
+                case  0:
+                    Log.d(TAG, "Enabling find me service ");
+                    characteristic = gatt.getService(FIND_ME_SERVICE).getCharacteristic(ALERT_LEVEL_CHARACTERISTIC);
+                    break;
+                case 1:
+                    Log.d(TAG, "Enabling find me service2 ");
+                    characteristic = gatt.getService(FIND_ME_SERVICE).getCharacteristic(ALERT_LEVEL_CHARACTERISTIC);
+                    break;
+                default:
+                    return;
+            }
+            gatt.readCharacteristic(characteristic);
+        }
+
+        private void setNotifyNextSensor(BluetoothGatt gatt){
+            BluetoothGattCharacteristic characteristic;
+            switch (mState){
+                case  0:
+                    Log.d(TAG, "set notify find me service ");
+                    characteristic = gatt.getService(FIND_ME_SERVICE).getCharacteristic(ALERT_LEVEL_CHARACTERISTIC);
+                    break;
+                case 1:
+                    Log.d(TAG, "set notify find me service2 ");
+                    characteristic = gatt.getService(FIND_ME_SERVICE).getCharacteristic(ALERT_LEVEL_CHARACTERISTIC);
+                    return;
+                default:
+                    mHandler.sendEmptyMessage(MSG_DISMISS);
+                    Log.d(TAG,"All sensors enabled");
+                    return;
+            }
+            gatt.setCharacteristicNotification(characteristic,true);
+            BluetoothGattDescriptor descriptor = characteristic.getDescriptor(CLIENT_CHARACTERISTIC_CONFIG);
+            descriptor.setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE);
+            gatt.writeDescriptor(descriptor);
+        }
+
+        @Override
+        public void onConnectionStateChange (BluetoothGatt gatt, int status , int newState){
+            Log.d(TAG, "Connection State change: " +status+ " -> " + connectionState(newState));
+            if(status == BluetoothGatt.GATT_SUCCESS && newState == BluetoothProfile.STATE_CONNECTED) {
+                /*
+                 * Once successfully connected, we must discover all services on the device
+                 * before we can read and wright their characteristics
+                 */
+                gatt.discoverServices();
+                mHandler.sendMessage(Message.obtain(null, MSG_PROGRESS, "Discovering services..."));
+
+            }else if (status == BluetoothGatt.GATT_SUCCESS && newState == BluetoothProfile.STATE_DISCONNECTED){
+                mHandler.sendEmptyMessage(MSG_CLEAR);
+
+            }else if (status != BluetoothGatt.GATT_SUCCESS){
+                gatt.disconnect();
+            }
+        }
+
+
+        public void onServicesDiscovered(BluetoothGatt gatt, int status){
+            Log.d(TAG, "Services Discovered: " +status);
+            mHandler.sendMessage(Message.obtain(null,MSG_PROGRESS,"Enabling Sensors..."));
+            mProgress.dismiss();
+            gatt.disconnect();
+            mHandler.removeCallbacks(mStopRunnable);
+            mHandler.removeCallbacks(mStartRunnable);
+            bluetoothAdapter.stopLeScan(leScanCallback);
+            gatt.discoverServices();
+
+            reset();
+            enableNextSensor(gatt);
+        }
+
+
+        public void onCharacteristicRead(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status){
+            if(ALERT_LEVEL_CHARACTERISTIC.equals(characteristic.getUuid())){
+                mHandler.sendMessage(Message.obtain(null, MSG_ALERT,characteristic));
+            }
+            setNotifyNextSensor(gatt);
+        }
+
+        public void onCharacteristicWrite(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status){
+
+            readNextSensor(gatt);
+        }
+
+
+
+        public void onCharacteristicChanged(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic){
+
+            if (FIND_ME_SERVICE.equals(characteristic.getUuid())){
+                mHandler.sendMessage(Message.obtain(null, MSG_SERVICE, characteristic));
+            }
+        }
+
+
+
+        @Override
+        public void onDescriptorWrite (BluetoothGatt gatt,BluetoothGattDescriptor descriptor, int status){
+            advance();
+            enableNextSensor(gatt);
+        }
+        public void onReadRemoteRssi(BluetoothGatt gatt, int rssi, int status){
+            Log.d(TAG,"Remote rssi: " +rssi);
+        }
+
+        private String connectionState(int status){
+            switch (status){
+                case BluetoothProfile.STATE_CONNECTED:
+                    return  "Connected";
+                case BluetoothProfile.STATE_DISCONNECTED:
+                    return "Disconnected";
+                case BluetoothProfile.STATE_CONNECTING:
+                    return "Connecting";
+                case BluetoothProfile.STATE_DISCONNECTING:
+                    return "Disconnecting";
+                default:
+                    return String.valueOf(status);
+            }
+        }
+    };
+
+    private static final int MSG_DISMISS = 202;
+    private static final int MSG_PROGRESS = 201;
+    private static final int MSG_CLEAR = 301;
+    private static final int MSG_SERVICE = 101;
+    private static final int MSG_ALERT = 102;
+    private  Handler mHandler = new Handler() {
+        @Override
+        public void handleMessage(Message msg) {
+            BluetoothGattCharacteristic characteristic;
+            switch (msg.what) {
+                case MSG_ALERT:
+                    characteristic = (BluetoothGattCharacteristic) msg.obj;
+                    if (characteristic.getValue() == null) {
+                        Log.d(TAG, "Error obtaining alert value");
+                        return;
+                    }
+                    updateAlertValues(characteristic);
+                    break;
+                case MSG_SERVICE:
+                    characteristic = (BluetoothGattCharacteristic) msg.obj;
+                    if (characteristic.getValue() == null) {
+                        Log.d(TAG, "Error obtaining service value");
+                        return;
+                    }
+                    updateServiceValues(characteristic);
+                    break;
+                case MSG_PROGRESS:
+                    mProgress.setMessage((String) msg.obj);
+                    if (!mProgress.isShowing()) {
+                        mProgress.show();
+                    }
+                    break;
+                case MSG_DISMISS:
+                    mProgress.hide();
+                    break;
+                case MSG_CLEAR:
+                    // clearDisplayValues();
+                    break;
+            }
+        }
+    };
+
+    private void updateAlertValues(BluetoothGattCharacteristic characteristic){
+
+    }
+
+    private void updateServiceValues(BluetoothGattCharacteristic characteristic){
 
     }
 
