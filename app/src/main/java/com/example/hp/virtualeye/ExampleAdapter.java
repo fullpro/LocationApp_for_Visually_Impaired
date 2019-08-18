@@ -49,11 +49,6 @@ public class ExampleAdapter extends RecyclerView.Adapter<ExampleAdapter.ExampleV
         this.listener = listener;
     }
 
-
-    public interface onItemClickListener {
-        void onItemClick(int position);
-    }
-
     public static class ExampleViewHolder extends RecyclerView.ViewHolder {
         private TextView tv_name;
         private TextView tv_macaddr;

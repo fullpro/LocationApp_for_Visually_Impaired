@@ -99,7 +99,6 @@ public class MainActivity extends AppCompatActivity {
             }
         }
 
-
         mrecycler_view = findViewById(R.id.list);
         mrecycler_view.setHasFixedSize(true);
         layoutManager = new LinearLayoutManager(this);
@@ -108,13 +107,16 @@ public class MainActivity extends AppCompatActivity {
         mrecycler_view.setLayoutManager(new GridLayoutManager(this, 2));
         mrecycler_view.setAdapter(mAdapter);
         mBTLEScanner = new Scanner_BTLE(this, 15000);
-
-        // Use this check to determine whether BLE is supported on the device.  Then you can
-        // selectively disable BLE-related features.
         if (!getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)) {
             Toast.makeText(this, "BLE not supported", Toast.LENGTH_SHORT).show();
             finish();
         }
+        record.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                startVoiceRecognitionActivity();
+            }
+        });
 
         //Permission For Location
         if (Build.VERSION.SDK_INT > 23) {
@@ -144,14 +146,10 @@ public class MainActivity extends AppCompatActivity {
         mAdapter.setOnItemClickListener(position -> {
             finalPosition=position;
             startVoiceRecognitionActivity();
-
-
         });
 
         mySwipeRefreshLayout = findViewById(R.id.swiperefresh);
         mySwipeRefreshLayout.setOnRefreshListener(() -> {
-            // This method performs the actual data-refresh operation.
-            // The method calls setRefreshing(false) when it's finished.
             startScan();
             new Handler().postDelayed(() -> mySwipeRefreshLayout.setRefreshing(false), 4000);
         });
@@ -181,6 +179,13 @@ public class MainActivity extends AppCompatActivity {
                 addSavedPref(mDevice);
                 finalPosition=99999;
             }
+            else{
+                for (MyBluetoothDevice myBluetoothDevice : mDevice) {
+                    if (myBluetoothDevice.getName().equals(result)){
+                        Toast.makeText(this,result+" clicked",Toast.LENGTH_SHORT).show();
+                    }
+                }
+            }
         }
     }
 
@@ -201,17 +206,6 @@ public class MainActivity extends AppCompatActivity {
         mBTLEScanner.stop();
     }
 
-    @Override
-    protected void onResume() {
-        super.onResume();
-        startScan();
-    }
-
-    @Override
-    protected void onPause() {
-        super.onPause();
-        stopScan();
-    }
 
 
     public void addDevice(MyBluetoothDevice device) {
