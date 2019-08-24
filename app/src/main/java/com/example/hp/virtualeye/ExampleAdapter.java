@@ -37,7 +37,6 @@ public class ExampleAdapter extends RecyclerView.Adapter<ExampleAdapter.ExampleV
     public void onBindViewHolder(@NonNull ExampleViewHolder exampleViewHolder, int i) {
         MyBluetoothDevice current_example = devices.get(i);
         exampleViewHolder.tv_name.setText(current_example.getName());
-        exampleViewHolder.tv_macaddr.setText(current_example.getAddress());
     }
 
     @Override
@@ -56,7 +55,6 @@ public class ExampleAdapter extends RecyclerView.Adapter<ExampleAdapter.ExampleV
         public ExampleViewHolder(@NonNull View itemView, final onItemClickListener listener) {
             super(itemView);
             tv_name = itemView.findViewById(R.id.tv_name);
-            tv_macaddr = itemView.findViewById(R.id.tv_macaddr);
 
             itemView.setOnClickListener(v -> {
                 if (listener != null) {

@@ -6,6 +6,11 @@ public class MyBluetoothDevice {
     BluetoothDevice bluetoothDevice;
     String name;
     String address;
+    public int count;
+
+    public MyBluetoothDevice() {
+        count = 0;
+    }
 
     public BluetoothDevice getBluetoothDevice() {
         return bluetoothDevice;
