@@ -91,6 +91,7 @@ public class MainActivity extends AppCompatActivity {
     SwipeRefreshLayout mySwipeRefreshLayout;
     ImageButton EditBtn;
     private ExampleAdapter mAdapter;
+    private OnBoardActivity onBoardActivity;
     private Map<String, BluetoothDevice> mBTDeviceHashMap = new HashMap<String, BluetoothDevice>();
     private List<MyBluetoothDevice> mDevice = new ArrayList<MyBluetoothDevice>();
     Button record;
@@ -120,6 +121,10 @@ public class MainActivity extends AppCompatActivity {
         record = findViewById(R.id.record);
         SharedPreferences prefs = getSharedPreferences(SHARED, MODE_PRIVATE);
         String saved1 = prefs.getString(DEVICES_LIST, null);
+
+
+
+
         if (saved1 != null) {
             Gson gson = new Gson();
             Type type = new TypeToken<List<MyBluetoothDevice>>() {
