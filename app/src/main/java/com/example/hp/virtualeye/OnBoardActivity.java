@@ -1,5 +1,7 @@
 package com.example.hp.virtualeye;
 
+import android.content.Intent;
+import android.content.SharedPreferences;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -16,7 +18,7 @@ public class OnBoardActivity extends AppCompatActivity {
 
     private TextView[] mDots;
 
-    private SliderAdapter sliderAdapter;
+    SliderAdapter sliderAdapter;
 
     private int mCurrentPage;
 
@@ -28,35 +30,48 @@ public class OnBoardActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_on_board);
 
-        mViewPager = (ViewPager) findViewById(R.id.SlideViewPager);
-        mLinearLayout = (LinearLayout) findViewById(R.id.DotsLayout);
+        mViewPager = findViewById(R.id.SlideViewPager);
+        mLinearLayout =  findViewById(R.id.DotsLayout);
         sliderAdapter = new SliderAdapter(this);
 
-        mNextBtn = (Button)findViewById(R.id.NextButton);
-        mPrevBtn = (Button) findViewById(R.id.PrevButton);
+        mNextBtn = findViewById(R.id.NextButton);
+        mPrevBtn = findViewById(R.id.PrevButton);
 
         mViewPager.setAdapter(sliderAdapter);
+
+
 
         addDotsIndicator(0);
         mViewPager.addOnPageChangeListener(viewListener);
 
-        mNextBtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
+        mNextBtn.setOnClickListener(v ->    {
+            if(mViewPager.getCurrentItem() == 2){
+                finishOnBoarding();
+            } else{
                 mViewPager.setCurrentItem(mCurrentPage +1);
             }
         });
 
-        mPrevBtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                mViewPager.setCurrentItem(mCurrentPage -1);
-            }
-        });
+        mPrevBtn.setOnClickListener(v -> mViewPager.setCurrentItem(mCurrentPage -1));
+
+
+
+    }
+
+
+    public void finishOnBoarding() {
+        SharedPreferences preferences = getSharedPreferences("my_preferences", MODE_PRIVATE);
+        preferences.edit().putBoolean("onboarding_complete", true).apply();
+
+        Intent main = new Intent(this, MainActivity.class);
+        startActivity(main);
+        finish();
+
     }
 
     public void addDotsIndicator(int position){
         mDots = new TextView[3];
+        mLinearLayout.removeAllViews();
 
         for(int i = 0; i < mDots.length;i++){
             mDots[i] = new  TextView(this);
@@ -98,6 +113,8 @@ public class OnBoardActivity extends AppCompatActivity {
 
                 mNextBtn.setText("Finish");
                 mPrevBtn.setText("Back");
+
+
             }else {
                 mNextBtn.setEnabled(true);
                 mPrevBtn.setEnabled(true);

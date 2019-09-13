@@ -121,8 +121,16 @@ public class MainActivity extends AppCompatActivity {
         record = findViewById(R.id.record);
         SharedPreferences prefs = getSharedPreferences(SHARED, MODE_PRIVATE);
         String saved1 = prefs.getString(DEVICES_LIST, null);
+        SharedPreferences preferences = getSharedPreferences("my_preferences", MODE_PRIVATE);
 
 
+
+        if(!preferences.getBoolean("onboarding_complete",false)){
+            Intent onboarding = new Intent(this,OnBoardActivity.class);
+            startActivity(onboarding);
+            finish();
+            return;
+        }
 
 
         if (saved1 != null) {
