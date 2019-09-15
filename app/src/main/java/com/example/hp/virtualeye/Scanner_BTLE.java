@@ -15,23 +15,11 @@ public class Scanner_BTLE {
             super.onScanResult(callbackType, result);
         }
     };
-
     private MainActivity ma;
     private BluetoothAdapter bluetoothAdapter;
     private boolean mScanning;
     private Handler mHandler;
     private long scanPeriod;
-<<<<<<< HEAD
-    private BluetoothAdapter.LeScanCallback leScanCallback =
-            new BluetoothAdapter.LeScanCallback() {
-                @Override
-                public void onLeScan(final BluetoothDevice device, int rssi, byte[] scanRecord) {
-
-
-
-                    mHandler.post(() -> ma.addDevice(device));
-                }
-=======
     private BluetoothAdapter.LeScanCallback leScanCallback = new BluetoothAdapter.LeScanCallback() {
         @Override
         public void onLeScan(final BluetoothDevice device, int rssi, byte[] scanRecord) {
@@ -41,7 +29,6 @@ public class Scanner_BTLE {
             myBluetoothDevice.setName(device.getName());
             mHandler.post(() -> ma.addDevice(myBluetoothDevice));
         }
->>>>>>> 7e7ba7fbcab5985f0b15e074640d6fdad910846a
 
     };
 
@@ -67,11 +54,6 @@ public class Scanner_BTLE {
     }
 
     public void stop() {
-<<<<<<< HEAD
-
-        ma.save();
-=======
->>>>>>> 7e7ba7fbcab5985f0b15e074640d6fdad910846a
         scanLeDevice(false);
     }
 
@@ -86,6 +68,7 @@ public class Scanner_BTLE {
             mScanning = true;
             bluetoothAdapter.startLeScan(leScanCallback);
         } else {
+            Toast.makeText(this.ma, "No Device Found", Toast.LENGTH_LONG).show();
             mScanning = false;
             bluetoothAdapter.stopLeScan(leScanCallback);
         }
