@@ -6,27 +6,33 @@
     android:layout_height="match_parent"
     android:background="#2d2d2d"
     android:orientation="vertical"
-    tools:context=".MainActivity">
+    tools:context=".MainActivity"
+    android:weightSum="2">
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal">
+        android:layout_height="match_parent"
+        android:orientation="horizontal"
+        android:layout_weight="1"
+        >
 
         <Button
             android:id="@+id/record"
             android:layout_width="match_parent"
-            android:layout_height="139dp"
-            android:text="Record"
+            android:layout_height="match_parent"
+            android:text="Find my devices"
             android:textAlignment="center"
             android:textSize="30sp" />
 
     </LinearLayout>
 
+
     <android.support.v4.widget.SwipeRefreshLayout
         android:id="@+id/swiperefresh"
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        >
 
         <android.support.v7.widget.RecyclerView
             android:id="@+id/list"
