@@ -61,7 +61,7 @@ public class OnBoardActivity extends AppCompatActivity {
 
     public void finishOnBoarding() {
         SharedPreferences preferences = getSharedPreferences("my_preferences", MODE_PRIVATE);
-        preferences.edit().putBoolean("onboarding_complete", true).apply();
+        preferences.edit().putBoolean("onBoarding_complete", true).apply();
 
         Intent main = new Intent(this, MainActivity.class);
         startActivity(main);

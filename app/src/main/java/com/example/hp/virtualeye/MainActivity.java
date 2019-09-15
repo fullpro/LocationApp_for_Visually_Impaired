@@ -93,9 +93,9 @@ public class MainActivity extends AppCompatActivity {
 
 
 
-        if(!preferences.getBoolean("onboarding_complete",false)){
-            Intent onboarding = new Intent(this,OnBoardActivity.class);
-            startActivity(onboarding);
+        if(!preferences.getBoolean("onBoarding_complete",false)){
+            Intent onBoarding = new Intent(this,OnBoardActivity.class);
+            startActivity(onBoarding);
             finish();
             return;
         }
