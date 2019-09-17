@@ -1,8 +1,6 @@
 package com.example.hp.virtualeye;
 
-import android.Manifest;
-import android.app.Activity;
-import android.app.AlertDialog;
+
 import android.app.ProgressDialog;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
@@ -10,6 +8,7 @@ import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattCallback;
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattDescriptor;
+import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothManager;
 import android.bluetooth.BluetoothProfile;
 import android.content.Context;
@@ -19,8 +18,6 @@ import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Handler;
 import android.os.Message;
-import android.preference.PreferenceManager;
-import android.provider.Settings;
 import android.speech.RecognizerIntent;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.widget.SwipeRefreshLayout;
@@ -30,70 +27,41 @@ import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
-import android.view.MenuItem;
-import android.view.View;
 import android.view.WindowManager;
-import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
 import android.widget.Button;
-import android.widget.EditText;
 import android.widget.ImageButton;
-import android.widget.TextView;
 import android.widget.Toast;
-
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.UUID;
-
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
-
-import java.io.BufferedReader;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-import java.util.Scanner;
-import java.util.Set;
-import java.util.SortedMap;
-import java.util.SortedSet;
-import java.util.TreeMap;
-import java.util.TreeSet;
 
-import static android.content.ContentValues.TAG;
 import static android.Manifest.permission.ACCESS_COARSE_LOCATION;
-import static android.provider.Settings.Secure.LOCATION_MODE;
-import static android.support.v7.widget.AppCompatDrawableManager.get;
 
 public class MainActivity extends AppCompatActivity {
 
     public static final String SHARED = "shared_values";
     public static final String DEVICES_LIST = "devices_list";
-    public static final String MAP_LIST = "hashmap";
-    private static final String TAG = "BlutoothGattAtivity";
+    public static final String MAP_LIST = "hashMap";
+    private static final String TAG = "BluetoothGattActivity";
     private ProgressDialog mProgress;
     private static final int PERMISSION_REQUEST_ID = 1;
     private static Scanner_BTLE mBTLEScanner;
-    RecyclerView mrecycler_view;
+    private BluetoothGattService mServiceImmidiateAlert;
+    RecyclerView mRecycler_view;
     RecyclerView.LayoutManager layoutManager;
     BluetoothAdapter bluetoothAdapter;
     SwipeRefreshLayout mySwipeRefreshLayout;
     ImageButton EditBtn;
     private ExampleAdapter mAdapter;
-    private OnBoardActivity onBoardActivity;
-    private Map<String, BluetoothDevice> mBTDeviceHashMap = new HashMap<String, BluetoothDevice>();
-    private List<MyBluetoothDevice> mDevice = new ArrayList<MyBluetoothDevice>();
+    private Map<String, BluetoothDevice> mBTDeviceHashMap = new HashMap<>();
+    private List<MyBluetoothDevice> mDevice = new ArrayList<>();
     Button record;
     public static final int VOICE_RECOGNITION_REQUEST_CODE = 1234;
     String result;
@@ -144,31 +112,25 @@ public class MainActivity extends AppCompatActivity {
             }
         }
 
-        mrecycler_view = findViewById(R.id.list);
-        mrecycler_view.setHasFixedSize(true);
+        mRecycler_view = findViewById(R.id.list);
+        mRecycler_view.setHasFixedSize(true);
         layoutManager = new LinearLayoutManager(this);
         Comparator c = Collections.reverseOrder(new sortByCount());
         Collections.sort(mDevice, c);
         mAdapter = new ExampleAdapter(mDevice);
-        mrecycler_view.setLayoutManager(layoutManager);
-        mrecycler_view.setLayoutManager(new GridLayoutManager(this, 2));
-        mrecycler_view.setAdapter(mAdapter);
+        mRecycler_view.setLayoutManager(layoutManager);
+        mRecycler_view.setLayoutManager(new GridLayoutManager(this, 2));
+        mRecycler_view.setAdapter(mAdapter);
         mBTLEScanner = new Scanner_BTLE(this, 15000);
         if (!getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)) {
             Toast.makeText(this, "BLE not supported", Toast.LENGTH_SHORT).show();
             finish();
         }
-        record.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                startVoiceRecognitionActivity();
-            }
-        });
+        record.setOnClickListener(v -> startVoiceRecognitionActivity());
 
         //Permission For Location
         if (Build.VERSION.SDK_INT > 23) {
             if (this.checkSelfPermission(ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                final AlertDialog.Builder builder = new AlertDialog.Builder(this);
 
                 ActivityCompat.requestPermissions(this, new String[]{ACCESS_COARSE_LOCATION}, PERMISSION_REQUEST_ID);
             }
@@ -200,7 +162,7 @@ public class MainActivity extends AppCompatActivity {
             startScan();
             new Handler().postDelayed(() -> mySwipeRefreshLayout.setRefreshing(false), 4000);
         });
-        ;
+        
         EditBtn = findViewById(R.id.EditBtn);
         mProgress = new ProgressDialog(this);
         mProgress.setIndeterminate(true);
@@ -314,12 +276,12 @@ public class MainActivity extends AppCompatActivity {
             switch (mState) {
                 case 0:
                     Log.d(TAG, "Enabling find me service ");
-                    characteristic = gatt.getService(FIND_ME_SERVICE).getCharacteristic(ALERT_LEVEL_CHARACTERISTIC);
+                    characteristic = gatt.getService(FIND_ME_SERVICE).getCharacteristic(IMMEDIATE_ALERT_SERVICE);
                     characteristic.setValue(new byte[]{0x02});
                     break;
                 case 1:
                     Log.d(TAG, "Enabling find me service2 ");
-                    characteristic = gatt.getService(FIND_ME_SERVICE).getCharacteristic(ALERT_LEVEL_CHARACTERISTIC);
+                    characteristic = gatt.getService(FIND_ME_SERVICE).getCharacteristic(IMMEDIATE_ALERT_SERVICE);
                     characteristic.setValue(new byte[]{0x01});
                     break;
                 default:
@@ -335,11 +297,11 @@ public class MainActivity extends AppCompatActivity {
             switch (mState) {
                 case 0:
                     Log.d(TAG, "Enabling find me service ");
-                    characteristic = gatt.getService(FIND_ME_SERVICE).getCharacteristic(ALERT_LEVEL_CHARACTERISTIC);
+                    characteristic = gatt.getService(FIND_ME_SERVICE).getCharacteristic(IMMEDIATE_ALERT_SERVICE);
                     break;
                 case 1:
                     Log.d(TAG, "Enabling find me service2 ");
-                    characteristic = gatt.getService(FIND_ME_SERVICE).getCharacteristic(ALERT_LEVEL_CHARACTERISTIC);
+                    characteristic = gatt.getService(FIND_ME_SERVICE).getCharacteristic(IMMEDIATE_ALERT_SERVICE);
                     break;
                 default:
                     return;
@@ -352,11 +314,11 @@ public class MainActivity extends AppCompatActivity {
             switch (mState) {
                 case 0:
                     Log.d(TAG, "set notify find me service ");
-                    characteristic = gatt.getService(FIND_ME_SERVICE).getCharacteristic(ALERT_LEVEL_CHARACTERISTIC);
+                    characteristic = gatt.getService(FIND_ME_SERVICE).getCharacteristic(IMMEDIATE_ALERT_SERVICE);
                     break;
                 case 1:
                     Log.d(TAG, "set notify find me service2 ");
-                    characteristic = gatt.getService(FIND_ME_SERVICE).getCharacteristic(ALERT_LEVEL_CHARACTERISTIC);
+                    characteristic = gatt.getService(FIND_ME_SERVICE).getCharacteristic(IMMEDIATE_ALERT_SERVICE);
                     return;
                 default:
                     mHandler.sendEmptyMessage(MSG_DISMISS);
@@ -399,6 +361,7 @@ public class MainActivity extends AppCompatActivity {
 //            mHandler.removeCallbacks(mStopRunnable);
 //            mHandler.removeCallbacks(mStartRunnable);
 //            bluetoothAdapter.stopLeScan(leScanCallback);
+
             gatt.discoverServices();
 
             reset();
@@ -458,16 +421,16 @@ public class MainActivity extends AppCompatActivity {
     private static final int MSG_CLEAR = 301;
     private static final int MSG_SERVICE = 101;
     private static final int MSG_ALERT = 102;
-    private Handler mHandler = new Handler() {
+    private Handler mHandler = new Handler(new Handler.Callback(){
         @Override
-        public void handleMessage(Message msg) {
+        public boolean handleMessage(Message msg) {
             BluetoothGattCharacteristic characteristic;
             switch (msg.what) {
                 case MSG_ALERT:
                     characteristic = (BluetoothGattCharacteristic) msg.obj;
                     if (characteristic.getValue() == null) {
                         Log.d(TAG, "Error obtaining alert value");
-                        return;
+                        return false;
                     }
                     updateAlertValues(characteristic);
                     break;
@@ -475,7 +438,7 @@ public class MainActivity extends AppCompatActivity {
                     characteristic = (BluetoothGattCharacteristic) msg.obj;
                     if (characteristic.getValue() == null) {
                         Log.d(TAG, "Error obtaining service value");
-                        return;
+                        return false;
                     }
                     updateServiceValues(characteristic);
                     break;
@@ -492,8 +455,9 @@ public class MainActivity extends AppCompatActivity {
                     // clearDisplayValues();
                     break;
             }
+            return false;
         }
-    };
+    });
 
     private void updateAlertValues(BluetoothGattCharacteristic characteristic) {
 
