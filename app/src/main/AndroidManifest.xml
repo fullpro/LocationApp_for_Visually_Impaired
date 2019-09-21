@@ -29,6 +29,16 @@
         </activity>
         <activity
             android:name=".MainActivity"
+            android:label="Preferences"
+            android:screenOrientation="landscape">
+            <intent-filter>
+                <action android:name="com.iphonik.chameleon.AppPreferenceActivity" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+
+        <activity
+            android:name=".StartScreen"
             android:screenOrientation="landscape">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
