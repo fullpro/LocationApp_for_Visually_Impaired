@@ -14,7 +14,9 @@
         android:layout_height="match_parent"
         android:text="Image Tagging"
         android:layout_weight="1"
-        android:textSize="32dp"/>
+        android:textSize="32dp"
+        android:contentDescription="Image Tagging"
+        />
 
     <Button
         android:id="@+id/object_tagging"
@@ -22,5 +24,6 @@
         android:layout_height="match_parent"
         android:text="Object tagging "
         android:layout_weight="1"
-        android:textSize="32dp"/>
+        android:textSize="32dp"
+        android:contentDescription="Object tagging"/>
 </LinearLayout>
