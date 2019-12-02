@@ -28,7 +28,10 @@ public class StartScreen extends AppCompatActivity {
         imageProcessing.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Toast.makeText(getApplicationContext(),"Coming soon",Toast.LENGTH_SHORT).show();
+
+                Intent intent=new Intent(StartScreen.this,Image_processing.class);
+                startActivity(intent);
+                finish();
             }
         });
     }
