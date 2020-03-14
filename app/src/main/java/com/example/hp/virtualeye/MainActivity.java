@@ -61,7 +61,7 @@ public class MainActivity extends AppCompatActivity {
     ImageButton EditBtn;
     private ExampleAdapter mAdapter;
     private Map<String, BluetoothDevice> mBTDeviceHashMap = new HashMap<>();
-    private List<MyBluetoothDevice> mDevice = new ArrayList<>();
+    public List<MyBluetoothDevice> mDevice = new ArrayList<>();
     Button record;
     public static final int VOICE_RECOGNITION_REQUEST_CODE = 1234;
     String result;
@@ -152,10 +152,16 @@ public class MainActivity extends AppCompatActivity {
             stopScan();
         }
 
+//        mAdapter.setOnItemClickListener(position -> {
+//            finalPosition = position;
+//            startVoiceRecognitionActivity();
+//        });
+
         mAdapter.setOnItemClickListener(position -> {
             finalPosition = position;
             startVoiceRecognitionActivity();
         });
+
 
         mySwipeRefreshLayout = findViewById(R.id.swiperefresh);
         mySwipeRefreshLayout.setOnRefreshListener(() -> {

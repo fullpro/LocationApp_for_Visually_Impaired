@@ -3,8 +3,8 @@ package com.example.hp.virtualeye;
 import android.bluetooth.BluetoothDevice;
 
 public class MyBluetoothDevice {
-    BluetoothDevice bluetoothDevice;
-    String name;
+    private BluetoothDevice bluetoothDevice;
+    private String name;
     String address;
     public int count;
 
